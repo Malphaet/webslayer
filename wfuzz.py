@@ -15,6 +15,7 @@ from payloads import *
 from dictio import dictionary
 import re
 import hashlib
+import random
 
 ENCODERS={}
 encs=dir(encoders)
@@ -32,13 +33,20 @@ class requestGenerator:
 		self.reqsgenerated=0
 
 		self.request=reqresp
-		self.proxy=proxy
 		self.allvars=False
 		self.allpost=False
 		self.allheaders=False
 		self.final=False
 		self.child=None
-
+		if proxy!=None:
+			if  proxy.count("-"):
+				self.proxy=proxy.split("-")
+				print self.proxy
+			else:
+				self.proxy=[proxy]
+		else:
+			self.proxy=proxy
+		#self.proxy=proxy
 		self.kk=varsSet
 		if varsSet=="allvars":
 			self.allvars=True
@@ -197,7 +205,11 @@ class requestGenerator:
 					a.description+=" - "+payload2
 				if method != 'None':
 					a.setAuth(method,userpass)
-				a.setProxy(self.proxy)
+				if self.proxy != None:
+					random.shuffle(self.proxy)	
+					a.setProxy(self.proxy[0])
+				else:
+					a.setProxy(self.proxy)
 				return a
 
 			elif method and (userpass.count('FUZZ') ):
@@ -216,7 +228,7 @@ class requestGenerator:
 
 class FuzzResult:
 
-	def __init__(self,request,saveMemory=True):
+	def __init__(self,request,sleeper,saveMemory=True):
 
 		global OS
 
@@ -226,6 +238,7 @@ class FuzzResult:
 		self.words=0
 		self.code=0
 		self.md5=""
+		self.sleeper=sleeper
 		
 		### Used only when saveMemory = False
 		self.respHeaders=[]
@@ -241,8 +254,7 @@ class FuzzResult:
 		import time
 		while i:
 			try:
-			
-				#time.sleep(0.1)
+				time.sleep(self.sleeper)
 				starttime=time.time()	
 				request.perform()
 				stoptime=time.time()	
@@ -328,10 +340,11 @@ class FuzzResult:
 
 
 class Fuzzer:
-	def __init__(self,genreq,ignore,threads=20):
+	def __init__(self,genreq,ignore,sleeper,threads=20):
 		self.genReq=genreq
 		self.results=[]
 		self.threads=threads
+		self.sleeper=sleeper
 		self.run=True
 		self.threads_list=[]
 		self.nres=0
@@ -352,9 +365,12 @@ class Fuzzer:
 		rq=self.getNewReq()
 		while rq and self.run:
 			try :
-				res=FuzzResult(rq,False)
-				#if (str(res.code) not in self.ignore):
-				self.agregaresultado(res)
+				res=FuzzResult(rq,self.sleeper,False)
+				if __name__=="__main__":
+					if (str(res.code) not in self.ignore):
+						self.agregaresultado(res)
+				else:
+					self.agregaresultado(res)
 			except :
 				pass
 			rq=self.getNewReq()
@@ -517,13 +533,14 @@ if __name__=="__main__":
 	html=False
 	postdata_data=""
 	nreq=0
+	sleeper=0
 
 	rlevel=0
 	current_depth=0
 
 	banner='''
 *************************************
-* Wfuzz  1.4c - The Web Bruteforcer *
+* Wfuzz  1.4d - The Web Bruteforcer *
 * Coded by:                         *
 * Christian Martorella              *
 *   - cmartorella@edge-security.com *
@@ -546,6 +563,7 @@ Options:
 -b cookie	: Specify a cookie for the requests
 -R depth    	: Recursive path discovery
 -V alltype  	: All parameters bruteforcing (allvars and allpost). No need for FUZZ keyword.
+-s sleep time  	: Time to wait between request (best used with -t 1) Default:0
 
 --basic auth  	: in format "user:pass" or "FUZZ:FUZZ"
 --ntlm auth   	: in format "domain\user:pass" or "domain\FUZ2Z:FUZZ"
@@ -565,7 +583,7 @@ Examples in the README.
 
 
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "cx:b:e:R:d:z:r:f:t:w:V:H:",['hc=','hh=','hl=','hw=','ntlm=','basic=','digest=','html'])
+		opts, args = getopt.getopt(sys.argv[1:], "cx:b:e:R:d:z:r:f:t:s:w:V:H:",['hc=','hh=','hl=','hw=','ntlm=','basic=','digest=','html'])
 		optsd=dict(opts)
 		if "-e" in optsd:
 			if optsd["-e"] == "help":
@@ -585,6 +603,8 @@ Examples in the README.
 	
 	if "-c" in optsd:
 		color=True
+	if "-s" in optsd:
+		sleeper=float(optsd["-s"])
 
 	if "--html" in optsd:
 		html=True
@@ -693,9 +713,7 @@ Examples in the README.
 	
 	if html:
 		sys.stderr.write("<html><head></head><body bgcolor=#000000 text=#FFFFFF><h1>Fuzzing %s</h1>\r\n<table border=\"1\">\r\n<tr><td>#request</td><td>Code</td><td>#lines</td><td>#words</td><td>Url</td></tr>\r\n" % (url) )
-
-	fz=Fuzzer(rh,hidecodes,ths)
-
+	fz=Fuzzer(rh,hidecodes,sleeper,ths)
 	print banner
 	print "Target: " + url
 	print "Payload type: " + payloadtype + "\n"
@@ -740,7 +758,7 @@ Examples in the README.
 	
 	
 					if rh2.moreRequests:
-						fz=Fuzzer(rh2,ths)
+						fz=Fuzzer(rh2,hidecodes,sleeper,ths)
 						print "-------------- Recursion level",current_depth,"---------------"
 						print
 						fz.Launch()
@@ -757,7 +775,7 @@ Examples in the README.
 			time.sleep(1)
 	except KeyboardInterrupt:
 		limpialinea()
-		sys.stdout.write("Stopping...\r\n")
+		sys.stdout.write("Stopping, cleaning threads...\r\n")
 		
 		fz.stop()
 

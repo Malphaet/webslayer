@@ -32,6 +32,7 @@ class Ui_MainWindow(MainGui):
 	
 	def __init__(self):
 		self.filedicc=""
+		self.filedicc2=""
 		self.fz=None
 		self.timer = QtCore.QTimer()
 		self.timer_load=QtCore.QTimer()
@@ -46,10 +47,9 @@ class Ui_MainWindow(MainGui):
 		self.numtests=0 
 		self.charlens=[] 
 		self.AllRes=[]   #Lista con todas las ejecuciones, datos.
-		self.datos=[]	#Lista con los datos de esta ejecucion
+		self.datos=[]	 #Lista con los datos de esta ejecucion
 		self.res_run=[]  #Resultados de la ultima ejecucion
 		self.filteres=[] #Resultados luego de ser filtrados (para grabar)
-		self.filedicc2=""
 		self.payload_imported2=""
 		self.payload_imported=""
 		self.last_recursion_res=0
@@ -67,6 +67,7 @@ class Ui_MainWindow(MainGui):
 		self.actuallinesfilter=""
 		self.includefilter="1"
 		self.private_surfing="1"
+		self.sleeper=0
 		
 		for i in encs:
 			try:
@@ -78,7 +79,9 @@ class Ui_MainWindow(MainGui):
 	def setupUi(self, MainWindow):
 		MainGui.setupUi(self, MainWindow)
 		QtCore.QObject.connect(self.botonFile, QtCore.SIGNAL("clicked()"),
-		 self.loadFileDicc)
+		self.loadFileDicc)
+		QtCore.QObject.connect(self.pushButton, QtCore.SIGNAL("clicked()"),
+		self.loadFileDicc2)
 		QtCore.QObject.connect(self.botonLaunch, QtCore.SIGNAL("clicked()"),
 		 self.pre_launch)
 		#QtCore.QObject.connect(self.botonLaunch,
@@ -325,7 +328,7 @@ class Ui_MainWindow(MainGui):
 		if dic != "None":
 			self.lineEdit_2.setText("")
 			self.lineEdit_2.setEnabled(False)
-			self.filedicc22=""
+			self.filedicc2=""
 		else:
 			self.lineEdit_2.setEnabled(True)
 	
@@ -483,6 +486,7 @@ class Ui_MainWindow(MainGui):
 		self.allvars=self.allparameterCombo.currentText()
 		self.testhost=hostchecker.Checker(self.target)
 		hostcheck=self.testhost.check()
+		self.sleeper=int(self.sleeperEdit.text())
 		if hostcheck ==1:
 			self.logsEdit.append("[-] Host check ok! "+ self.target)
 		else:
@@ -754,7 +758,7 @@ class Ui_MainWindow(MainGui):
 				self.reqcounter=0
 				self.totalreqs=int(reqs)
 				self.logsEdit.append("\tPayloads:" + str(self.totalreqs))
-				self.fz=Fuzzer(rh2,self.ignore,self.threads)
+				self.fz=Fuzzer(rh2,self.ignore,self.sleeper,self.threads)
 				self.fz.Launch()
 				self.numResults=0
 				self.timer.start(300)
@@ -956,8 +960,9 @@ class Ui_MainWindow(MainGui):
 		self.dictioList.setCurrentIndex(0)
 		
 	def loadFileDicc2 (self):
+		fileget = QtGui.QFileDialog()
 		try:
-			fileName2 = QtGui.QFileDialog.getOpenFileName()
+			fileName2=fileget.getOpenFileName()
 			self.logsEdit.append("[-] File loaded ok:" + str(fileName2))
 		except:
 			self.logsEdit.append("[X] File load failed:" + str(fileName2))
@@ -969,15 +974,12 @@ class Ui_MainWindow(MainGui):
 ###########################LAUNCH##################################
 ###########################LAUNCH##################################
 ###########################LAUNCH##################################
-###########################LAUNCH##################################
-###########################LAUNCH##################################
 	
 	def launch (self):
-		self.threads=int(self.threadSpin.cleanText())
+		self.threads=int(self.threadSpin.value())
 		self.encoding=self.encodingCombo.currentText()
 		url=""
 		self.webView.setUrl(QtCore.QUrl(url))
-		#if self.scout != 1:
 		self.target=str(self.editUrl.text())
 		self.proxy=str(self.proxyEdit.text())
 		self.allvars=self.allparameterCombo.currentText()
@@ -1012,7 +1014,7 @@ class Ui_MainWindow(MainGui):
 		if self.range != "":
 				self.dicc=self.range
 		
-		self.recursionLevel=int(self.recursionSpin.cleanText())
+		self.recursionLevel=int(self.recursionSpin.value())
 		
 		if self.headins!="":
 			for x in self.headins:
@@ -1091,7 +1093,7 @@ class Ui_MainWindow(MainGui):
 		str(self.postins),self.headins]
 		self.statusbar.showMessage('Starting attack..')
 		self.AllRes.append(self.datos)
-		self.fz=Fuzzer(self.rh,self.ignore,self.threads)
+		self.fz=Fuzzer(self.rh,self.ignore,self.sleeper,self.threads)
 		self.res_run=[]
 		self.reqcounter=0
 		#Completo la tabla de urls analizadas===========================
@@ -1987,6 +1989,8 @@ class Ui_MainWindow(MainGui):
 		count = self.diccList.count()
 		for i in range(count):
 			dict.append(str(self.diccList.item(i).text()))
+		import random
+		random.shuffle(dict)
 		return dict
 
 	def clearDict(self):
