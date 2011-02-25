@@ -14,7 +14,7 @@ import payloads
 import dictio
 import string
 from MainGui import  *
-#import highLighter
+import highLighter
 import hostchecker
 import sys
 import os
@@ -23,9 +23,12 @@ import os
 try:
 	import webbrowser
 except:
-	print "Import failed, webbrowser library not available"
+	print "Import failed, Webbrowser library not available"
 	sys.exit()
-from PyQt4.QtGui import *
+try:
+	from PyQt4.QtGui import *
+except:
+	print "Import failed, PyQT libraries not found"
 
 
 class Ui_MainWindow(MainGui):
@@ -40,7 +43,6 @@ class Ui_MainWindow(MainGui):
 		,self.timerFunc)
 		QtCore.QObject.connect(self.timer_load, QtCore.SIGNAL("timeout()")
 		, self.timer_loadres)
-		#Control de veces que se ejecuta antes del Launch
 		self.md5=[] 
 		self.lines=[]
 		self.words=[]
@@ -84,8 +86,6 @@ class Ui_MainWindow(MainGui):
 		self.loadFileDicc2)
 		QtCore.QObject.connect(self.botonLaunch, QtCore.SIGNAL("clicked()"),
 		 self.pre_launch)
-		#QtCore.QObject.connect(self.botonLaunch,
-		#QtCore.SIGNAL("clicked()"),self.scouterRun)
 		
 		QtCore.QObject.connect(self.comboListadoUrls,
 		QtCore.SIGNAL("activated(QString)"), self.clicked_combo_url)
@@ -139,7 +139,7 @@ class Ui_MainWindow(MainGui):
 		QtCore.QObject.connect(self.actionExport_results,
 		QtCore.SIGNAL("triggered()"), self.export_res)
 		QtCore.QObject.connect(self.actionExport_Payload_results,
-		QtCore.SIGNAL("triggered()"), self.export_xml)
+		QtCore.SIGNAL("triggered()"), self.export_payloads)
 		QtCore.QObject.connect(self.actionExport_results,
 		QtCore.SIGNAL("triggered()"), self.export_res)
 		QtCore.QObject.connect(self.actionExit,
@@ -223,11 +223,9 @@ class Ui_MainWindow(MainGui):
 		QtCore.QObject.connect(self.scrotButton, 
 		QtCore.SIGNAL("clicked()"), self.scrot)
 		
-		#QtCore.QObject.connect(self.addpayloadButton, 
-		#QtCore.SIGNAL("clicked()"), self.addbutton)
 		QtCore.QObject.connect(self.webView, 
 		QtCore.SIGNAL("loadFinished(bool)"), self.updateUrl)
-		#
+		
 		self.populate_requester()
 		self.populate_creditCards()
 		self.populate_authorization()
@@ -266,7 +264,7 @@ class Ui_MainWindow(MainGui):
 			help=file.read()
 			html_help=help
 		except:
-			print "Error loading help"
+			print "Error loading help file"
 		self.webView_2.setHtml(QtCore.QString(str(help)))
 		self.loadDicts()
 	def quit(self):
@@ -314,7 +312,7 @@ class Ui_MainWindow(MainGui):
 			pass
 
 ######################################################
-	def dictioSelect(self):
+	def dictioSelect(self): #Dictionary loading stuff
 		dic=self.dictioList.currentText()
 		if dic != "None":
 			self.editFilename.setText("")
@@ -336,6 +334,7 @@ class Ui_MainWindow(MainGui):
 		osname=os.name
 		if osname =="nt":
 			test=os.getcwd()+"\\wordlist\\"
+			print test
 		else:
 			test=os.getcwd()+"/wordlist/"
 		files=os.listdir(test)
@@ -370,7 +369,8 @@ class Ui_MainWindow(MainGui):
 					self.dictioList.addItem(x+"/"+y)
 					self.dict2List.addItem(x+"/"+y)
 
-
+############################################################
+#Messages and other combos population
 	def loadErrors(self):
 		file="config/common-errors.txt"
 		errors="("
@@ -449,7 +449,8 @@ class Ui_MainWindow(MainGui):
 		else:
 			self.private_surfing="1"
 		
-
+##################################################
+#Code to check for backup files not used at the moment
 	def backups(self):
 		thisresults=self.res_run
 		results=[]
@@ -459,7 +460,6 @@ class Ui_MainWindow(MainGui):
 			else:
 				results.append(x)
 				self.last_results.append(x)
-
 		voidDicc=dictionary()
 		rh2=requestGenerator(Request(),"None",voidDicc)
 		for i in results:
@@ -475,15 +475,18 @@ class Ui_MainWindow(MainGui):
 					rhtemp=requestGenerator(a.req,"None",self.dictio1,\
 					self.dicExtensions,self.proxy)
 					rh2.append(rhtemp)
-
+#####################################################
+#Preflight check, here we control that all the conditions for a test are OK
 	def pre_launch(self):
 		self.logsEdit.append(self.messages["pre_launch0"])
 		self.logsEdit.append(self.messages["pre_launch1"])
 		self.statusbar.showMessage(self.messages["pre_launch2"])
-		#if self.scout != 1:
 		self.target=str(self.editUrl.text())
 		self.range=self.rangeEdit.text()
 		self.allvars=self.allparameterCombo.currentText()
+		self.fuzztype=self.comboFUZZ.currentText()
+		self.method=str(self.authCombo.currentText())
+		self.userpass=str(self.passEdit.text())
 		self.testhost=hostchecker.Checker(self.target)
 		hostcheck=self.testhost.check()
 		self.sleeper=int(self.sleeperEdit.text())
@@ -491,9 +494,7 @@ class Ui_MainWindow(MainGui):
 			self.logsEdit.append("[-] Host check ok! "+ self.target)
 		else:
 			self.logsEdit.append("[-] Host invalid: "+ self.target)
-		self.fuzztype=self.comboFUZZ.currentText()
-		self.method=str(self.authCombo.currentText())
-		self.userpass=str(self.passEdit.text())
+
 		if os.name =="nt":
 			dir=os.getcwd()+"\\wordlist\\"
 		else:	
@@ -518,7 +519,7 @@ class Ui_MainWindow(MainGui):
 			headins=headins.rstrip()
 			self.headins=headins.split("\n")
 			head_temp=self.headersinputEdit.toPlainText()
-			
+				
 		ok=1
 		
 		if self.target == "":
@@ -547,7 +548,7 @@ class Ui_MainWindow(MainGui):
 				self.logsEdit.append(self.messages["fuzz_2"])
 				ok=0
 				
-		if self.fuzztype=="Dictionary" and self.filedicc==None:
+		if self.fuzztype=="Dictionary" and self.filedicc=="None":
 				test=QtGui.QMessageBox.warning(None,str("File\
 				error"),self.messages["fuzz_3"],0,1)
 				self.logsEdit.append(self.messages["fuzz_4"])
@@ -627,11 +628,8 @@ class Ui_MainWindow(MainGui):
 
 
 ###############RECURSION#######################################
-###############RECURSION#######################################
-###############RECURSION#######################################
 	def recursion(self):
 		self.logsEdit.append(self.messages["recursion0"])
-
 		if self.recursionLevel:
 			thisresults=self.res_run
 			results=[]
@@ -742,7 +740,7 @@ class Ui_MainWindow(MainGui):
 										rh2.append(rhtemp)
 							except:
 								pass
-			########################################################################################################
+#############################################################################################
 			if rh2.moreRequests:
 				self.logsEdit.append("[-] Recursive attack...")
 				tim=time.localtime(time.time())
@@ -774,7 +772,7 @@ class Ui_MainWindow(MainGui):
 				self.tabWidget.setCurrentIndex(2)
 			else:
 					pass
-	
+##############################################################################################	
 	def about (self):
 		test=QtGui.QMessageBox.about(None, str("About WebSlayer"),self.messages["about"]) 
 
@@ -804,7 +802,10 @@ class Ui_MainWindow(MainGui):
 			else:	
 				self.logsEdit.append(self.messages["payload4"])
 				test=QtGui.QMessageBox.warning(None,str("Payload"),self.messages["payload_2"],0,1)
-	def export_xml(self):
+
+##########################################################################################
+#Exporting results code
+	def export_payloads(self):
 		import datetime
 		fileName = QtGui.QFileDialog.getSaveFileName()
 		if fileName != "":
@@ -824,13 +825,11 @@ class Ui_MainWindow(MainGui):
 		else:
 			pass
 	
-	
 	def export_res(self):
 		import datetime
 		fileName = QtGui.QFileDialog.getSaveFileName()
 		if fileName != "":
 			output = open(fileName, 'wb')
-			output.write(self.messages["export0"])
 			tim=time.localtime(time.time())
 			finishtime=time.strftime("%H:%M:%S",tim)
 			date=datetime.date.today()
@@ -855,24 +854,18 @@ class Ui_MainWindow(MainGui):
 							output.write('</tr>')
 						output.write("</table>")
 						output.write('<input type="submit" value="Replay post">')
+						output.write("Code: "+ str(x.code) + " Lines: "+ str(x.lines) + " Words: "+str(x.words))
 						output.write('<hr>')
 						output.write('</form><br>')
 					else:
 						output.write ("\r\n<tr><td>%s%d</font></td><td>%4dL</td><td>%5dW</td><td><a href=%s>%s    </a></td></tr>\r\n" %(htmlc,x.code,x.lines,x.words,str(x.completeUrl),str(x.completeUrl)))
-						#output.write('Code: '+str(x.code)+' <a href="'+x.completeUrl+'">'+x.completeUrl+'</a><br>')
-			output.write("</table></body></html><h5>Webslayer by EdgeSecurity<h5>\r\n")	
+			output.write("</table></body></html><h5>Webslayer an OWASP Project<h5>\r\n")	
 			output.close()
 			self.logsEdit.append(self.messages["export1"])
 		else:
 			pass
-	
-	def scouterRun(self):
-		urls=self.scouter.toPlainText().split("\n")
-		for x in urls:
-			self.target=str(x)
-			self.scout = 1
-			self.pre_launch()
-	
+#############################################################################################
+
 	def enable_pass(self):
 		passw=self.authCombo.currentText()
 		if passw!="None":
@@ -972,8 +965,6 @@ class Ui_MainWindow(MainGui):
 		self.dict2List.setCurrentIndex(0)
 		
 ###########################LAUNCH##################################
-###########################LAUNCH##################################
-###########################LAUNCH##################################
 	
 	def launch (self):
 		self.threads=int(self.threadSpin.value())
@@ -1069,7 +1060,7 @@ class Ui_MainWindow(MainGui):
 				if self.filedicc2 != "" or self.payload_imported2 != "":
 						self.dictio2.setencoder(enc)
 						
-		#Generamos los request=========================================
+		#We generate the request set=========================================
 		self.rh=requestGenerator(a,str(self.allvar),self.dictio1,
 		self.dictio2,self.proxy)
 		self.extensions=str(self.lineExtensions.text())
@@ -1086,7 +1077,7 @@ class Ui_MainWindow(MainGui):
 		self.logsEdit.append("\tRequest generetad succesfully.")
 		self.logsEdit.append("[-] Attack ready")
 		self.totalreqs=self.rh.count()
-		#Datos de la ejecucion actual====================================
+		#Information from the current execution====================================
 		res=[] 
 		self.datos=[self.numtests,self.target,str(self.fuzztype),self.dicsource,
 		str(self.range),res,str(self.filedicc),str(self.filedicc2),
@@ -1096,7 +1087,7 @@ class Ui_MainWindow(MainGui):
 		self.fz=Fuzzer(self.rh,self.ignore,self.sleeper,self.threads)
 		self.res_run=[]
 		self.reqcounter=0
-		#Completo la tabla de urls analizadas===========================
+		#We complete the analyzed urls combo===========================
 		new=QtGui.QTableWidgetItem()
 		new.setText(str(self.editUrl.text()))
 		id=self.numtests
@@ -1112,7 +1103,6 @@ class Ui_MainWindow(MainGui):
 			else:
 				a.setBackgroundColor(QtGui.QColor(0,0,100,127))	
 			i+=1
-		#Ventana de LOGS=================================================
 		self.logsEdit.append("[+] Starting attack...")
 		self.logsEdit.append("\tTarget: " + self.target)
 		tim=time.localtime(time.time())
@@ -1148,7 +1138,8 @@ class Ui_MainWindow(MainGui):
 		self.progressBar.setTextVisible(True)
 		self.tabWidget.setCurrentIndex(2)
 
-
+#############################################################################
+#Code for the Analyzed combo box, to load info from attack
 	def clicked_combo_url(self):
 		position=int(self.comboListadoUrls.currentText().split("|")[0])
 		self.statusbar.showMessage("Loading results..")
@@ -1220,7 +1211,8 @@ class Ui_MainWindow(MainGui):
 		else:
 			pass
 		self.statusbar.showMessage("")
-	
+################################################################################
+#Code to cancel,pause,resume the running attack
 	def cancel(self):
 		self.statusbar.showMessage("Stopping attack, please wait..")
 		self.timer.stop()
@@ -1268,7 +1260,9 @@ class Ui_MainWindow(MainGui):
 		self.resumeButton.hide()
 		self.pauseButton.show()
 		self.cancelButton.show()
-		
+###################################################################################	
+#Code to save and load the session
+
 	def save_results(self):
 		fileName = QtGui.QFileDialog.getSaveFileName()
 		if fileName != "":
@@ -1317,6 +1311,8 @@ class Ui_MainWindow(MainGui):
 		else:
 			pass
 			
+########################################################################################
+#Code that fill the information for each requests
 			
 	def pinta_load(self,r,a):
 		col=QtGui.QTableWidgetItem()
@@ -1425,7 +1421,8 @@ class Ui_MainWindow(MainGui):
 		for x in headers:
 			self.headersEdit.append(x[0]+": "+x[1])	
 			
-			
+###################################################################################
+#Code that will loop through all the request when loading an URL			
 	def timer_loadres(self):
 			req=self.res_run_topop.pop(0)
 			self.pinta_load(req,self.reqcounter)
@@ -1452,7 +1449,8 @@ class Ui_MainWindow(MainGui):
 					self.tableResults.resizeColumnsToContents()
 			self.statusbar.showMessage('Results loaded')
 
-
+#############################################################################
+#Code that will loop through all the request during an attack
 	def timerFunc(self):
 		import time
 		flag=0
@@ -1532,7 +1530,7 @@ class Ui_MainWindow(MainGui):
 			if flag!=1:
 				self.numResults=size
 ######################################################################################
-	
+#Code that will fill all the info related a request while running an attack 	
 	def pintaResult(self,a,r):
 		#QCoreApplication.processEvents()
 		#QApplication.processEvents(QEventLoop.AllEvents)
@@ -1620,6 +1618,7 @@ class Ui_MainWindow(MainGui):
 					self.linesCombo_2.addItem(str(r.words))
 					
 ################################################################
+#Regular expression filtering
 	
 	def clearfilter(self):
 		self.regexpLine.setText("")
@@ -1657,7 +1656,7 @@ class Ui_MainWindow(MainGui):
 		self.tableResults.resizeColumnToContents(5)
 
 ##########################################################################
-
+#Code to find in html and text view
 	def finder(self):
 		text=str(self.lineEdit_4.text())
 		self.sourceEdit.find(text)
@@ -1769,6 +1768,7 @@ class Ui_MainWindow(MainGui):
 		
 
 ####################################################################################
+#Clean all the tables
 
 	def limpiatablas(self):
 		self.ComboCodes.clear()
@@ -1823,10 +1823,8 @@ class Ui_MainWindow(MainGui):
 		self.tableResults.setHorizontalHeaderItem(8,headerItem10)
 				
 
-################################################### REQUESTER
-################################################
-################################################### REQUESTER
-################################################
+##################################################
+#Code for the Requester (need improvements)
 
 	def sendrequest(self,server,port,post,request,ssl):
 			import socket
@@ -1873,7 +1871,6 @@ class Ui_MainWindow(MainGui):
 				raw= res.encode("String_Escape")
 			return res,raw	
 
-#################################################################
 	
 	def reqSet(self):
 		text=self.comboBox.currentText()
@@ -1963,7 +1960,6 @@ class Ui_MainWindow(MainGui):
 		self.ouputencoderTextedit.clear()
 
 
-################################################### PAYLOAD GENERATOR ################################################
 ################################################### PAYLOAD GENERATOR ################################################
 
 	def addDict(self):
@@ -2354,7 +2350,6 @@ class Ui_MainWindow(MainGui):
 			self.ouputencoderTextedit.setTextColor(QtGui.QColor("Red"))
 		
 		elif type == "All":
-			self.ouputencoderTextedit.append("****ALL encoding start****")
 			a=encoders.encoder_urlencode()
 			res=a.encode(clear)
 			self.ouputencoderTextedit.setTextColor(QtGui.QColor("DarkBlue"))
@@ -2425,9 +2420,6 @@ class Ui_MainWindow(MainGui):
 			res=a.encode(clear)
 			self.ouputencoderTextedit.setTextColor(QtGui.QColor("Red"))
 			self.ouputencoderTextedit.append("MSsql char" +" : "+  res)
-			
-			self.ouputencoderTextedit.append("****ALL encoding end****")
-			res="========================================="
 		elif type=="None":
 			pass
 		self.ouputencoderTextedit.append(type +" : "+  res)
@@ -2482,8 +2474,8 @@ class Ui_MainWindow(MainGui):
 			self.ouputencoderTextedit.append("Mysql Char" +" : "+  res)
 		
 
-				
-			
+#############################################################################
+#Code for diffing (not implemented yet)
 			
 def html2list(x, b=0):
 	mode = 'char'
